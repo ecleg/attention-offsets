@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoBalance - AI Carbon Offset for Students</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;600;700&display=swap');
+        * {margin:0;padding:0;box-sizing:border-box;}
+        body {
+            font-family: 'Space Mono', monospace;
+            background:#0d1412;
+            color:#cfe9d8;
+            min-height:100vh;
+            overflow-x:hidden;
+            letter-spacing:0.25px;
+        }
+        body::before { /* subtle modular grid overlay */
+            content:'';position:fixed;inset:0;pointer-events:none;
+            background-image:linear-gradient(rgba(80,120,90,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(80,120,90,0.05) 1px,transparent 1px);
+            background-size:24px 24px;
+            mix-blend-mode:overlay;opacity:.4;
+        }
+        .container {max-width:1400px;margin:0 auto;padding:32px 28px;}
+        header {
+            background:#0f1b18;
+            border-bottom:1px solid #2f5747;
+            position:sticky;top:0;z-index:100;
+            padding:14px 0;
+        }
+        .header-content {max-width:1400px;margin:0 auto;padding:0 28px;display:flex;justify-content:space-between;align-items:center;}
+        .logo {display:flex;align-items:center;gap:10px;}
+        .logo-icon {width:44px;height:44px;background:#101f1b;border:1px solid #2f5747;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#a8ff60;box-shadow:0 0 0 1px #1c332b,0 6px 18px -6px #0c2018;}
+        .logo-text h1 {font-size:22px;color:#a8ff60;font-weight:700;letter-spacing:2px;}
+        .logo-text p {font-size:10px;color:#6fae8a;text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+        nav {display:flex;gap:6px;}
+        nav a {color:#8cbfa5;text-decoration:none;font-size:12px;padding:8px 14px;border:1px solid #233c32;border-radius:6px;line-height:1;display:inline-flex;align-items:center;gap:6px;transition:.25s;background:#132520;}
+        nav a:hover {background:#1d3b32;color:#a8ff60;border-color:#2f5747;}
+        .banner-ad {background:#132520;border:1px solid #2f5747;border-radius:12px;padding:24px;margin:26px 0;position:relative;overflow:hidden;min-height:110px;display:flex;align-items:center;justify-content:center;isolation:isolate;}
+        .banner-ad::before {content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 50%,rgba(168,255,96,0.15),transparent 60%),radial-gradient(circle at 70% 50%,rgba(111,174,138,0.15),transparent 60%);mix-blend-mode:screen;opacity:.7;}
+        @keyframes pulse {0%,100%{opacity:.55;}50%{opacity:.9;}}
+        .banner-ad-label {position:absolute;top:8px;right:14px;font-size:9px;color:#6fae8a;opacity:.7;text-transform:uppercase;letter-spacing:1.5px;}
+        .banner-ad h3 {color:#a8ff60;font-size:18px;margin-bottom:6px;letter-spacing:1px;}
+        .banner-ad p {color:#8cbfa5;font-size:12px;}
+        .dashboard {display:grid;grid-template-columns:1.9fr 1fr;gap:26px;margin-top:10px;}
+        .impact-card, .usage-tracker, .community-section, .offset-status {background:#101f1b;border:1px solid #2f5747;border-radius:14px;padding:30px;position:relative;}
+        .impact-card::before, .usage-tracker::before, .community-section::before, .offset-status::before {content:'';position:absolute;inset:0;border:1px solid rgba(168,255,96,0.05);border-radius:14px;pointer-events:none;}
+        .impact-card h2, .community-section h2 {color:#a8ff60;font-size:20px;margin-bottom:22px;display:flex;align-items:center;gap:10px;letter-spacing:1px;}
+        .metric-grid {display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px;margin-bottom:26px;}
+        .metric {background:#132520;border:1px solid #233c32;border-radius:10px;padding:18px;position:relative;transition:.3s;}
+        .metric::after {content:'';position:absolute;inset:0;border:1px solid rgba(168,255,96,0.08);border-radius:10px;opacity:0;transition:.4s;}
+        .metric:hover {background:#1a322b;}
+        .metric:hover::after {opacity:1;}
+        .metric-label {color:#6fae8a;font-size:10px;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;}
+        .metric-value {color:#a8ff60;font-size:26px;font-weight:700;margin-bottom:4px;}
+        .metric-unit {color:#8cbfa5;font-size:12px;}
+        .metric-change {color:#6fae8a;font-size:11px;margin-top:6px;}
+        .metric-change.positive {color:#a8ff60;}
+        .metric-change.negative {color:#ff6b6b;}
+        .progress-section {margin-top:10px;}
+        .progress-label {display:flex;justify-content:space-between;margin-bottom:8px;color:#6fae8a;font-size:11px;letter-spacing:1px;}
+        .progress-bar {background:#132520;height:10px;border-radius:6px;overflow:hidden;border:1px solid #233c32;}
+        .progress-fill {background:linear-gradient(90deg,#1f3f34,#a8ff60);height:100%;border-radius:6px;transition:width 1s cubic-bezier(.25,.8,.25,1);box-shadow:0 0 12px -2px #a8ff60;}
+        .usage-tracker h3 {color:#a8ff60;font-size:16px;margin-bottom:18px;letter-spacing:1px;}
+        .usage-item {background:#132520;border:1px solid #233c32;border-radius:8px;padding:14px;margin-bottom:14px;position:relative;}
+        .usage-item::before {content:'';position:absolute;inset:0;border:1px solid rgba(168,255,96,0.05);border-radius:8px;}
+        .usage-header {display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+        .usage-type {color:#8cbfa5;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;}
+        .usage-amount {color:#a8ff60;font-size:13px;font-weight:700;}
+        .usage-bar {background:#101f1b;height:5px;border-radius:4px;overflow:hidden;border:1px solid #233c32;}
+        .usage-bar-fill {background:linear-gradient(90deg,#264438,#a8ff60);height:100%;border-radius:4px;}
+        .community-section {margin-top:30px;}
+        .leaderboard {display:grid;gap:12px;}
+        .leaderboard-item {background:#132520;border:1px solid #233c32;border-radius:10px;padding:18px;display:flex;align-items:center;gap:18px;position:relative;transition:.35s;}
+        .leaderboard-item:hover {transform:translateX(6px);background:#1a322b;}
+        .rank {width:46px;height:46px;background:#101f1b;border:1px solid #2f5747;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#a8ff60;}
+        .leaderboard-item:first-child .rank {background:#1f3f34;color:#ffdd55;box-shadow:0 0 0 1px #3f6f5b,0 0 14px -4px #ffdd55;}
+        .user-name {color:#8cbfa5;font-size:13px;font-weight:600;margin-bottom:4px;letter-spacing:.5px;}
+        .user-impact {color:#6fae8a;font-size:11px;letter-spacing:.5px;}
+        .user-score {color:#a8ff60;font-size:20px;font-weight:700;}
+        .offset-status h3 {color:#a8ff60;font-size:18px;margin-bottom:18px;letter-spacing:1px;}
+        .offset-details {display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:18px;}
+        .offset-item {text-align:center;padding:18px;background:#132520;border:1px solid #233c32;border-radius:10px;position:relative;}
+        .offset-item::after {content:'';position:absolute;inset:0;border:1px solid rgba(168,255,96,0.05);border-radius:10px;}
+        .offset-icon {font-size:30px;margin-bottom:8px;}
+        .offset-value {color:#a8ff60;font-size:20px;font-weight:700;margin-bottom:4px;}
+        .offset-label {color:#6fae8a;font-size:9px;text-transform:uppercase;letter-spacing:2px;}
+        .particle {position:fixed;width:3px;height:3px;background:#a8ff60;border-radius:50%;opacity:.35;animation:float 18s linear infinite;}
+        @keyframes float {0%{transform:translateY(0) translateX(0);}50%{transform:translateY(-90vh) translateX(40px);}100%{transform:translateY(0) translateX(0);}}
+        .badge {display:inline-block;padding:3px 6px;border:1px solid #2f5747;border-radius:4px;font-size:10px;color:#a8ff60;background:#101f1b;letter-spacing:1px;}
+        @media (max-width:1024px){.dashboard{grid-template-columns:1fr;} .metric-grid{grid-template-columns:1fr;} .offset-details{grid-template-columns:1fr;} nav{flex-wrap:wrap;} }
+    </style>
+</head>
+<body>
+    <!-- Floating particles for ambient effect -->
+    <div class="particle" style="left: 10%; animation-delay: 0s;"></div>
+    <div class="particle" style="left: 30%; animation-delay: 5s;"></div>
+    <div class="particle" style="left: 50%; animation-delay: 10s;"></div>
+    <div class="particle" style="left: 70%; animation-delay: 15s;"></div>
+    <div class="particle" style="left: 90%; animation-delay: 3s;"></div>
+
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">🌱</div>
+                <div class="logo-text">
+                    <h1>EcoBalance</h1>
+                    <p>AI Carbon Offset Platform</p>
+                </div>
+            </div>
+            <nav>
+                <a href="#">Dashboard</a>
+                <a href="#">My Impact</a>
+                <a href="#">Community</a>
+                <a href="#">Rewards</a>
+                <a href="#">Profile</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div style="margin-bottom:24px;background:#101f1b;border:1px solid #2f5747;border-radius:12px;padding:20px;">
+            <form id="uploadForm" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                <input type="file" id="exportFile" accept="application/json" style="color:#8cbfa5;font-size:12px;" />
+                <button type="submit" style="background:#132520;color:#a8ff60;border:1px solid #2f5747;padding:8px 14px;border-radius:6px;font-family:'Space Mono',monospace;font-size:12px;cursor:pointer;">RUN ANALYSIS</button>
+                <span id="statusMsg" style="font-size:11px;color:#6fae8a;"></span>
+            </form>
+        </div>
+        <!-- Banner Ad Section (Attention-Based Funding) -->
+        <div class="banner-ad">
+            <span class="banner-ad-label">Sponsored • Supporting your offset</span>
+            <div class="banner-ad-content">
+                <h3>SPONSORED OFFSET SLOT</h3>
+                <p>Your attention here helps fund carbon offset projects • View to contribute</p>
+            </div>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div class="dashboard">
+            <!-- Left Column: Impact Metrics -->
+            <div>
+                <div class="impact-card">
+                    <h2>CARBON / USAGE PANEL<span class="badge" style="margin-left:8px;">LIVE ANALYSIS</span></h2>
+                    
+                    <div class="metric-grid">
+                        <div class="metric">
+                            <div class="metric-label">AI Queries This Month</div>
+                            <div class="metric-value">2,847</div>
+                            <div class="metric-unit">requests</div>
+                            <div class="metric-change positive">↑ 12% from last month</div>
+                        </div>
+                        
+                        <div class="metric">
+                            <div class="metric-label">Carbon Generated</div>
+                            <div class="metric-value">4.2</div>
+                            <div class="metric-unit">kg CO₂</div>
+                            <div class="metric-change">~0.15 kg/day average</div>
+                        </div>
+                        
+                        <div class="metric">
+                            <div class="metric-label">Carbon Offset</div>
+                            <div class="metric-value">3.8</div>
+                            <div class="metric-unit">kg CO₂</div>
+                            <div class="metric-change positive">90% offset rate</div>
+                        </div>
+                        
+                        <div class="metric">
+                            <div class="metric-label">Ad Views Contributing</div>
+                            <div class="metric-value">142</div>
+                            <div class="metric-unit">impressions</div>
+                            <div class="metric-change positive">$4.26 raised</div>
+                        </div>
+                    </div>
+
+                    <div class="progress-section">
+                        <div class="progress-label">
+                            <span>Monthly Offset Goal</span>
+                            <span>90% Complete</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 90%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Offset Status -->
+                <div class="offset-status">
+                    <h3>OFFSET EQUIVALENTS <span class="badge">IMPACT MAP</span></h3>
+                    <div class="offset-details">
+                        <div class="offset-item">
+                            <div class="offset-icon">🌳</div>
+                            <div class="offset-value">12</div>
+                            <div class="offset-label">Trees Equivalent</div>
+                        </div>
+                        <div class="offset-item">
+                            <div class="offset-icon">⚡</div>
+                            <div class="offset-value">18 kWh</div>
+                            <div class="offset-label">Clean Energy</div>
+                        </div>
+                        <div class="offset-item">
+                            <div class="offset-icon">♻️</div>
+                            <div class="offset-value">95%</div>
+                            <div class="offset-label">Offset Rate</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: AI Usage Tracker -->
+            <div>
+                <div class="usage-tracker">
+                    <h3>AI USAGE BREAKDOWN <span class="badge">STREAM</span></h3>
+                    
+                    <div class="usage-item">
+                        <div class="usage-header">
+                            <span class="usage-type">ChatGPT Sessions</span>
+                            <span class="usage-amount">1,245 queries</span>
+                        </div>
+                        <div class="usage-bar">
+                            <div class="usage-bar-fill" style="width: 85%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="usage-item">
+                        <div class="usage-header">
+                            <span class="usage-type">Code Assistance</span>
+                            <span class="usage-amount">892 queries</span>
+                        </div>
+                        <div class="usage-bar">
+                            <div class="usage-bar-fill" style="width: 65%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="usage-item">
+                        <div class="usage-header">
+                            <span class="usage-type">Research Tools</span>
+                            <span class="usage-amount">468 queries</span>
+                        </div>
+                        <div class="usage-bar">
+                            <div class="usage-bar-fill" style="width: 45%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="usage-item">
+                        <div class="usage-header">
+                            <span class="usage-type">Image Generation</span>
+                            <span class="usage-amount">242 queries</span>
+                        </div>
+                        <div class="usage-bar">
+                            <div class="usage-bar-fill" style="width: 30%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Community Leaderboard Section -->
+        <div class="community-section">
+            <h2>COMMUNITY IMPACT LEADERS <span class="badge">TRACK</span></h2>
+            
+            <div class="leaderboard">
+                <div class="leaderboard-item">
+                    <div class="rank">1</div>
+                    <div class="user-info">
+                        <div class="user-name">Sarah M. - Environmental Science</div>
+                        <div class="user-impact">Berkeley • 98% offset rate • 127 trees equivalent</div>
+                    </div>
+                    <div class="user-score">847</div>
+                </div>
+
+                <div class="leaderboard-item">
+                    <div class="rank">2</div>
+                    <div class="user-info">
+                        <div class="user-name">Alex K. - Computer Science</div>
+                        <div class="user-impact">MIT • 96% offset rate • 104 trees equivalent</div>
+                    </div>
+                    <div class="user-score">792</div>
+                </div>
+
+                <div class="leaderboard-item">
+                    <div class="rank">3</div>
+                    <div class="user-info">
+                        <div class="user-name">Jordan P. - Engineering</div>
+                        <div class="user-impact">Stanford • 95% offset rate • 89 trees equivalent</div>
+                    </div>
+                    <div class="user-score">756</div>
+                </div>
+
+                <div class="leaderboard-item">
+                    <div class="rank">4</div>
+                    <div class="user-info">
+                        <div class="user-name">You - Student</div>
+                        <div class="user-impact">Your University • 90% offset rate • 12 trees equivalent</div>
+                    </div>
+                    <div class="user-score">421</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Banner Ad -->
+        <div class="banner-ad" style="margin-top: 30px;">
+            <span class="banner-ad-label">Eco-Partner Ad</span>
+            <div class="banner-ad-content">
+                <h3>OFFSET FUNNEL CHANNEL</h3>
+                <p>Sustainable tech partners • Your engagement = Carbon offset funding</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add smooth scroll animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate progress bars on load
+            const progressBars = document.querySelectorAll('.progress-fill, .usage-bar-fill');
+            progressBars.forEach(bar => {
+                const width = bar.style.width;
+                bar.style.width = '0';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, 300);
+            });
+
+            // Animate metrics on scroll
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            });
+
+            document.querySelectorAll('.metric, .usage-item, .leaderboard-item').forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                el.style.transition = 'all 0.6s ease-out';
+                observer.observe(el);
+            });
+        });
+        // Wire upload
+        const form = document.getElementById('uploadForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const f = document.getElementById('exportFile').files[0];
+            if(!f){ document.getElementById('statusMsg').textContent='Select JSON export first.'; return; }
+            const fd = new FormData(); fd.append('file', f);
+            document.getElementById('statusMsg').textContent='Analyzing...';
+            try {
+                const resp = await fetch('/upload', { method:'POST', body: fd });
+                const text = await resp.text();
+                let data;
+                try { data = JSON.parse(text); } catch(parseErr) { throw new Error('Server did not return valid JSON'); }
+                if(!resp.ok){ throw new Error(data.error || 'Upload failed'); }
+                if(data.error){ throw new Error(data.error); }
+                // Map data to UI
+                const map = {
+                    'AI Queries This Month': data.user_messages,
+                    'Carbon Generated': data.kg_co2e.toFixed(2),
+                    'Carbon Offset': (data.kg_co2e * 0.9).toFixed(2), // placeholder ratio
+                    'Ad Views Contributing': data.ad_impressions
+                };
+                document.querySelectorAll('.metric').forEach(m => {
+                    const label = m.querySelector('.metric-label')?.textContent?.trim();
+                    if(label && map[label] !== undefined){
+                        const valEl = m.querySelector('.metric-value');
+                        if(valEl){ valEl.textContent = map[label]; }
+                    }
+                });
+                document.getElementById('statusMsg').textContent='Done.';
+            } catch(err){
+                document.getElementById('statusMsg').textContent='Error: '+err.message;
+            }
+        });
+    </script>
+</body>
+</html>

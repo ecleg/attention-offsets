@@ -1,0 +1,14 @@
+# Convenience commands
+.PHONY: setup run-api analyze-sample test
+
+setup:
+	python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
+
+run-api:
+	uvicorn CreditAnalysis370:app --reload
+
+analyze-sample:
+	python CreditAnalysis370.py examples/minimal_export.json --outdir analysis
+
+test:
+	pytest -q

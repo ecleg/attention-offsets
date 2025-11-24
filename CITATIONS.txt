@@ -1,0 +1,107 @@
+
+CITATIONS AND FORMULAS FOR AI IMPACT ANALYSIS
+
+This document lists all sources and formulas used to generate the environmental and economic impact figures in impact.csv (output by CreditAnalysis370.py).
+AI Assistance:
+    Portions of code, all code for JSON parsing data extraction (AI is better at reading AI than me), and all code for HTML
+    Research into the carbon market and AI systems energy consumption
+    Verifying my calculations
+    GitHub Copilot, ChatGPT (OpenAI, 2023–2025)
+
+CORE FORMULAS
+
+1. Token Estimation
+Formula: tokens = total_characters / 4
+Rationale: OpenAI and industry standard heuristic for English text.
+Source: OpenAI API documentation; see also QUICK_REFERENCE.md
+
+2. Energy Consumption
+Formula: watt_hours = tokens * 0.008
+         kilowatt_hours = watt_hours / 1000
+Rationale: Weighted average for GPT-3.5, GPT-4, Claude, Llama.
+Source: Luccioni et al. (2024); OpenAI Energy Disclosures (2024); Strubell et al. (2023)
+Electric car fuel efficiency: Electric vehicle database, 2019
+
+3. Carbon Footprint
+Formula: kg_CO2e = kilowatt_hours * 0.35
+Rationale: Server-side compute for prompts/responses, US grid/cloud provider average carbon intensity.
+Source: EPA eGRID (2024); Microsoft Azure Sustainability Report (2024); Google Cloud Carbon Footprint Report (2024)
+Important Note:
+    What is not included in carbon footprint calculation:
+        Model training footprint
+        End‑user device energy and networking
+        Hardware embodied carbon
+        Water usage (factored in later)
+
+4. Water Consumption
+Formula: liters = kilowatt_hours * 1.8
+Rationale: Data center cooling water intensity.
+Source: Google Environmental Report (2024); Li et al. (2024); Microsoft Water Positive Commitment (2024)
+
+5. Ad Revenue
+Formula: impressions = user_prompts * 1.0
+         revenue_usd = (impressions / 1000) * 2.50
+Rationale: 1 ad per prompt, $2.50 CPM (cost per 1000 impressions).
+Source: Industry baseline CPM for display ads (2024-2025)
+
+6. Offset Cost
+Formula: offset_cost_usd = kg_CO2e * 0.01
+Rationale: Voluntary carbon market average price (2025).
+Source: Gold Standard, VCS, voluntary market reports
+
+6a. Water Offset Cost
+Formula: offset_water_usd = liters * (water_price_per_1000_gal / (1000 * 3.785))
+                water_price_per_1000_gal = 1.50 USD (baseline, non-regional)
+Rationale: Water used in data center cooling is a separate environmental impact from carbon emissions. 
+                     Offsetting water consumption funds restoration and efficiency programs that return water 
+                     to stressed basins or reduce future data center water demand.
+Source: Bonneville Environmental Foundation (BEF) Water Restoration Certificates; 
+                Gold Standard Water Benefit projects; The Nature Conservancy water funds; 
+                corporate water restoration pricing surveys (2024-2025)
+        
+What Water Offset Funds Support:
+    - Riparian habitat restoration (returns water to rivers/streams in stressed basins)
+    - Agricultural-to-environmental water transfers
+    - Municipal water efficiency retrofits (reduces demand, freeing water for ecosystems)
+    - Wetland restoration and groundwater recharge projects
+    - Data center closed-loop cooling R&D (reduces future freshwater withdrawal)
+
+Important Note: Water offset cost is NOT included in the carbon footprint. Carbon and water are 
+                                tracked separately. The "offset_cost" metric in impact.csv is the sum of both 
+                                (carbon + water) to reflect total environmental restoration investment.
+
+6b. Combined Offset Cost
+Formula: offset_cost_combined = offset_carbon + offset_water
+Rationale: Total environmental impact restoration cost (carbon + water).
+Source: See above (6 and 6a)
+
+7. Coverage Ratio
+Formula: coverage = revenue_usd / offset_cost_usd
+Rationale: Economic viability of ad-funded offset model.
+Source: See above
+
+8. Real-World Ad Impressions Equivalents
+Instagram Reels: 1 ad per 4 minutes of scrolling (Instagram, 2024)
+YouTube Shorts: 1 ad per 1 minute of scrolling (YouTube, 2024)
+
+References
+
+Luccioni, S. et al. (2024). "Power Hungry Processing: Watts Driving the Cost of AI Deployment?" FAccT 2024.
+Electric vehicle database. (2019). EV Database. EV Database. https://ev-database.org/cheatsheet/energy-consumption-electric-car
+Patterson, D. et al. (2024). "The Carbon Footprint of Machine Learning Training Will Plateau, Then Shrink." IEEE Computer.
+Strubell, E. et al. (2023). "Energy and Policy Considerations for Deep Learning in NLP." ACL 2023.
+Li, P. et al. (2024). "Making AI Less 'Thirsty': Uncovering and Addressing the Secret Water Footprint of AI Models." arXiv.
+Google Environmental Report (2024). Alphabet Inc.
+Microsoft Water Positive Commitment (2024). Microsoft Corp.
+EPA eGRID (2024). U.S. Environmental Protection Agency.
+Microsoft Azure Sustainability Report (2024). Microsoft Corp.
+Google Cloud Carbon Footprint (2024). Google Cloud.
+Gold Standard, VCS, voluntary carbon market reports (2024-2025).
+Instagram Ad Frequency: https://www.instagram.com/sambucha/reel/DP_7VYdES7Z/
+YouTube Ad Frequency: https://support.google.com/youtube/answer/2375464?hl=en
+OpenAI API Documentation (2024)
+
+
+NOTES
+- All formulas and constants are calibrated to October 2025 research and industry disclosures.
+- Real-world equivalents (energy, water, carbon, ad time) are based on published averages and industry standards as of 2024-2025.
