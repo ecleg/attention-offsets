@@ -1,0 +1,332 @@
+{
+  "analysis_date": "2025-11-27T00:36:10.422411",
+  "sample_size": 6,
+  "individual_results": [
+    {
+      "person": "PersonA",
+      "conversations": 99,
+      "total_messages": 2324,
+      "user_messages": 851,
+      "assistant_messages": 1164,
+      "total_chars": 1260910,
+      "est_tokens": 315227.5,
+      "baseline_kwh": 2.52182,
+      "weighted_kwh": 4.183927699999999,
+      "energy_multiplier_effect": 1.6590905377862017,
+      "est_kg_co2e": 1.6317318029999996,
+      "est_ad_revenue_usd": 4.255,
+      "est_offset_cost_usd": 0.03263463605999999,
+      "coverage_ratio": 130.38294627147133,
+      "top_models": [
+        [
+          "gpt-5",
+          544
+        ],
+        [
+          "gpt-4o",
+          415
+        ],
+        [
+          "gpt-5-t-mini",
+          150
+        ],
+        [
+          "gpt-5-mini",
+          149
+        ],
+        [
+          "gpt-4-1-mini",
+          104
+        ]
+      ],
+      "top_tools": [
+        [
+          "web",
+          23
+        ],
+        [
+          "python",
+          16
+        ],
+        [
+          "web.run",
+          11
+        ],
+        [
+          "web.search",
+          3
+        ],
+        [
+          "assistant",
+          2
+        ]
+      ]
+    },
+    {
+      "person": "PersonB",
+      "conversations": 173,
+      "total_messages": 5258,
+      "user_messages": 2155,
+      "assistant_messages": 2545,
+      "total_chars": 2184606,
+      "est_tokens": 546151.5,
+      "baseline_kwh": 4.369212,
+      "weighted_kwh": 7.991696299999994,
+      "energy_multiplier_effect": 1.8290932781471794,
+      "est_kg_co2e": 3.1167615569999976,
+      "est_ad_revenue_usd": 10.774999999999999,
+      "est_offset_cost_usd": 0.062335231139999954,
+      "coverage_ratio": 172.85569978557083,
+      "top_models": [
+        [
+          "gpt-4o",
+          1181
+        ],
+        [
+          "gpt-4o-mini",
+          909
+        ],
+        [
+          "gpt-5",
+          456
+        ],
+        [
+          "o3-mini",
+          21
+        ],
+        [
+          "gpt-4-1-mini",
+          19
+        ]
+      ],
+      "top_tools": [
+        [
+          "assistant",
+          49
+        ],
+        [
+          "python",
+          47
+        ],
+        [
+          "web",
+          29
+        ],
+        [
+          "t2uay3k.sj1i4kz",
+          23
+        ],
+        [
+          "browser",
+          20
+        ]
+      ]
+    },
+    {
+      "person": "PersonC",
+      "conversations": 3,
+      "total_messages": 93,
+      "user_messages": 45,
+      "assistant_messages": 44,
+      "total_chars": 82401,
+      "est_tokens": 20600.25,
+      "baseline_kwh": 0.164802,
+      "weighted_kwh": 0.17320700000000008,
+      "energy_multiplier_effect": 1.051000594652978,
+      "est_kg_co2e": 0.06755073000000003,
+      "est_ad_revenue_usd": 0.22499999999999998,
+      "est_offset_cost_usd": 0.0013510146000000006,
+      "coverage_ratio": 166.5415014760017,
+      "top_models": [
+        [
+          "text-davinci-002-render-sha",
+          45
+        ]
+      ],
+      "top_tools": []
+    },
+    {
+      "person": "PersonI",
+      "conversations": 6,
+      "total_messages": 170,
+      "user_messages": 61,
+      "assistant_messages": 75,
+      "total_chars": 130034,
+      "est_tokens": 32508.5,
+      "baseline_kwh": 0.26006799999999997,
+      "weighted_kwh": 0.5079610000000002,
+      "energy_multiplier_effect": 1.9531853207622634,
+      "est_kg_co2e": 0.19810479000000009,
+      "est_ad_revenue_usd": 0.305,
+      "est_offset_cost_usd": 0.003962095800000002,
+      "coverage_ratio": 76.97946122352717,
+      "top_models": [
+        [
+          "gpt-4o",
+          101
+        ],
+        [
+          "gpt-4-1-mini",
+          2
+        ]
+      ],
+      "top_tools": [
+        [
+          "assistant",
+          3
+        ],
+        [
+          "bio",
+          2
+        ],
+        [
+          "web",
+          1
+        ],
+        [
+          "web.search",
+          1
+        ],
+        [
+          "file_search.msearch",
+          1
+        ]
+      ]
+    },
+    {
+      "person": "PersonZ",
+      "conversations": 186,
+      "total_messages": 3177,
+      "user_messages": 1184,
+      "assistant_messages": 1582,
+      "total_chars": 2788751,
+      "est_tokens": 697187.75,
+      "baseline_kwh": 5.577502000000001,
+      "weighted_kwh": 10.09426420000002,
+      "energy_multiplier_effect": 1.8098181228801025,
+      "est_kg_co2e": 3.9367630380000076,
+      "est_ad_revenue_usd": 5.92,
+      "est_offset_cost_usd": 0.07873526076000015,
+      "coverage_ratio": 75.18867585953987,
+      "top_models": [
+        [
+          "gpt-4o",
+          1223
+        ],
+        [
+          "gpt-5",
+          293
+        ],
+        [
+          "gpt-4o-mini",
+          162
+        ],
+        [
+          "gpt-5-t-mini",
+          60
+        ],
+        [
+          "gpt-5-mini",
+          44
+        ]
+      ],
+      "top_tools": [
+        [
+          "python",
+          48
+        ],
+        [
+          "bio",
+          7
+        ],
+        [
+          "assistant",
+          7
+        ],
+        [
+          "canmore.update_textdoc",
+          7
+        ],
+        [
+          "canmore.create_textdoc",
+          5
+        ]
+      ]
+    },
+    {
+      "person": "Person1",
+      "conversations": 84,
+      "total_messages": 1829,
+      "user_messages": 759,
+      "assistant_messages": 884,
+      "total_chars": 1441901,
+      "est_tokens": 360475.25,
+      "baseline_kwh": 2.883802,
+      "weighted_kwh": 3.879582999999998,
+      "energy_multiplier_effect": 1.3453014457996761,
+      "est_kg_co2e": 1.5130373699999993,
+      "est_ad_revenue_usd": 3.795,
+      "est_offset_cost_usd": 0.030260747399999986,
+      "coverage_ratio": 125.4099890473955,
+      "top_models": [
+        [
+          "text-davinci-002-render-sha",
+          607
+        ],
+        [
+          "gpt-4o",
+          326
+        ],
+        [
+          "gpt-4o-mini",
+          46
+        ],
+        [
+          "o3-mini",
+          6
+        ]
+      ],
+      "top_tools": [
+        [
+          "canmore.create_textdoc",
+          9
+        ],
+        [
+          "canmore.update_textdoc",
+          9
+        ],
+        [
+          "myfiles_browser",
+          5
+        ],
+        [
+          "browser",
+          4
+        ],
+        [
+          "canmore.comment_textdoc",
+          1
+        ]
+      ]
+    }
+  ],
+  "averages": {
+    "conversations_per_user": 91.83333333333333,
+    "messages_per_user": 2141.8333333333335,
+    "user_prompts_per_user": 842.5,
+    "tokens_per_user": 328691.7916666667,
+    "weighted_kwh_per_user": 4.471773200000002,
+    "co2_kg_per_user": 1.7439915480000006,
+    "ad_revenue_usd_per_user": 4.2124999999999995,
+    "offset_cost_usd_per_user": 0.03487983096000002,
+    "coverage_ratio": 124.55971227725108,
+    "energy_multiplier_effect": 1.6079148833380668
+  },
+  "per_prompt_averages": {
+    "total_prompts_analyzed": 5055,
+    "co2_grams_per_prompt": 2.070019641543028,
+    "ad_revenue_usd_per_prompt": 0.005,
+    "offset_cost_usd_per_prompt": 4.140039283086055e-05
+  },
+  "key_insight": "Ad revenue covers offset costs by 124.6x on average"
+}
