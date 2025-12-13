@@ -19,16 +19,16 @@ import re
 import sys
 import csv
 import math
-from typing import Optional, Iterable, Dict, Any
+from typing import Optional, Dict, Any
 from pathlib import Path
 from collections import Counter
 from datetime import datetime, timezone
 
 
-# configurable assumptions (calibrated to oct 2025 research)
+# configurable assumptions (calibrated to nov 2025 research)
 
 ASSUME_CHARS_PER_TOKEN = 4.0          # heuristic (validated across exports)
-ASSUME_WH_PER_TOKEN = 0.008           # Wh per token (weighted avg: GPT-3.5 abot 0.002, GPT-4 about 0.015)
+ASSUME_WH_PER_TOKEN = 0.008           # Wh per token (weighted avg: GPT-3.5 about 0.002, GPT-4 about 0.015)
                                        # Sources: OpenAI energy disclosures 2024, Luccioni et al. 2024
 ASSUME_WATER_L_PER_KWH = 1.8          # Liters of water per kWh (data center cooling intensity)
                                        # Google/Microsoft 2024 disclosures around 1.8 L/kWh
@@ -42,6 +42,108 @@ ASSUME_OFFSET_PRICE_USD_PER_KG = 0.01 # $ per kg CO2e (voluntary carbon market a
 ASSUME_WATER_OFFSET_USD_PER_1000_GAL = 1.50  # baseline restoration/efficiency price
 ASSUME_WATER_SCARCITY_MULTIPLIER = 1.0       # keep 1.0 (no regional adjustment by default)
 GALLON_TO_LITER = 3.785411784
+
+# ============================================================================
+# MODEL-SPECIFIC ENERGY MULTIPLIERS (Conservative estimates)
+# Base: 0.008 Wh/token = 1.0x multiplier (approximately GPT-3.5 class)
+# Sources: MIT Tech Review (2025), Chung & Chowdhury ML.ENERGY Benchmark (2025),
+#          Luccioni et al. "Power Hungry Processing" (2024)
+# ============================================================================
+# Rationale: Energy scales roughly with parameter count and architecture.
+# - Llama 8B: ~114 J/response = ~0.032 Wh (MIT Tech Review / ML.ENERGY 2025)
+# - Llama 405B: ~6,706 J/response = ~1.86 Wh (MIT Tech Review / ML.ENERGY 2025)
+# - 50x more parameters ≈ 59x more energy (sublinear but significant)
+# Conservative approach: use lower-bound multipliers to avoid overestimation.
+MODEL_ENERGY_MULTIPLIERS = {
+    # GPT-3.5 class (baseline, ~175B params but heavily optimized)
+    "text-davinci-002-render-sha": 1.0,
+    "text-davinci-003": 1.0,
+    "gpt-3.5-turbo": 1.0,
+    "gpt-3.5": 1.0,
+    
+    # GPT-4 class (~1T params estimated, mixture-of-experts)
+    # Conservative: 2x baseline (MIT Tech Review suggests 2-5x for larger models)
+    "gpt-4": 2.0,
+    "gpt-4-turbo": 2.0,
+    "gpt-4o": 1.8,          # Optimized variant, slightly lower
+    "gpt-4o-mini": 1.2,     # Smaller, more efficient
+    
+    # Reasoning models (chain-of-thought generates more tokens internally)
+    # MIT Tech Review: "reasoning models require 43x more energy for simple problems"
+    # Conservative: 3x for typical use (not worst-case 43x)
+    "o1-preview": 3.0,
+    "o1-mini": 2.0,
+    "o1": 3.0,
+    
+    # Default for unknown models (conservative: assume GPT-4 class)
+    "default": 1.5,
+}
+
+# ============================================================================
+# TOOL-SPECIFIC ENERGY MULTIPLIERS
+# Sources: MIT Tech Review (2025), Luccioni et al. (2024), Hugging Face AI Energy Score
+# ============================================================================
+# Key finding from MIT Tech Review (May 2025):
+# - Text generation (Llama 8B): ~114 J per response
+# - Image generation (SD3 Medium): ~2,282 J per image = ~20x text
+# - High-quality image (50 steps): ~4,402 J = ~39x text
+# - Video generation (CogVideoX): ~3,400,000 J per 5-sec video = ~30,000x text
+#
+# For DALL-E (closed-source), we use conservative estimates based on open-source equivalents.
+# Code interpreter and browser are assumed to be text-equivalent (no separate GPU inference).
+TOOL_ENERGY_MULTIPLIERS = {
+    # Image generation tools
+    # Conservative: 15x baseline (SD3 is ~20x, but DALL-E may be optimized)
+    "dalle.text2im": 15.0,
+    "dalle": 15.0,
+    "image_generation": 15.0,
+    
+    # Code interpreter (Python execution)
+    # Runs on CPU, not GPU inference - minimal additional energy
+    # Conservative: 1.2x (small overhead for compute)
+    "python": 1.2,
+    "code_interpreter": 1.2,
+    
+    # Web browsing tools
+    # Network requests + page rendering, no ML inference
+    # Conservative: 1.1x (minimal overhead)
+    "browser": 1.1,
+    "web": 1.1,
+    "web.run": 1.1,
+    
+    # File/document tools
+    # May involve embedding search (vector similarity)
+    # Conservative: 1.3x
+    "file_search": 1.3,
+    "retrieval": 1.3,
+    
+    # Canvas/editing tools (text manipulation, no image gen)
+    "canmore.canvas_tool": 1.0,
+    "canmore": 1.0,
+    
+    # Default for unknown tools
+    "default": 1.0,
+}
+
+def get_model_multiplier(model_slug: str) -> float:
+    """Return energy multiplier for a given model slug."""
+    if not model_slug:
+        return MODEL_ENERGY_MULTIPLIERS["default"]
+    model_lower = model_slug.lower()
+    for key, mult in MODEL_ENERGY_MULTIPLIERS.items():
+        if key != "default" and key in model_lower:
+            return mult
+    return MODEL_ENERGY_MULTIPLIERS["default"]
+
+def get_tool_multiplier(tool_name: str) -> float:
+    """Return energy multiplier for a given tool name."""
+    if not tool_name:
+        return TOOL_ENERGY_MULTIPLIERS["default"]
+    tool_lower = tool_name.lower()
+    for key, mult in TOOL_ENERGY_MULTIPLIERS.items():
+        if key != "default" and key in tool_lower:
+            return mult
+    return TOOL_ENERGY_MULTIPLIERS["default"]
 
 
 # minimal english stopwords (no deps)
@@ -64,7 +166,8 @@ TOKEN_SPLIT = re.compile(r"[^\w#+]+")
 LANG_CODE_BLOCK = re.compile(r"```([a-zA-Z0-9+#.\-]*)")
 HAS_CODE_FENCE = re.compile(r"```")
 
-MODEL_KEYS = ("model", "model_slug", "gpt_model", "recipient")  # best-effort
+# Keys to search for model slug (recipient removed - used for tool detection only)
+MODEL_KEYS = ("model", "model_slug", "gpt_model")
 
 def load_json(path: Path):
     with path.open("r", encoding="utf-8") as f:
@@ -139,8 +242,22 @@ def extract_model(msg) -> Optional[str]:
                     return v
     return None
 
+def extract_tool(msg) -> Optional[str]:
+    """Extract tool name from message (recipient field or author.name for tool role)."""
+    # Check recipient field (indicates tool being called)
+    recipient = msg.get("recipient")
+    if recipient and isinstance(recipient, str):
+        return recipient
+    # Check author.name for tool messages
+    author = msg.get("author", {})
+    if isinstance(author, dict):
+        name = author.get("name")
+        if name and isinstance(name, str):
+            return name
+    return None
+
 def iter_conversation_messages(conv: Dict[str, Any]):
-    # normalized iterator yielding dicts: {role, text, ts, model}
+    # normalized iterator yielding dicts: {role, text, ts, model, tool}
     # format A (common): conv["mapping"] with nodes keyed by message id
     if isinstance(conv, dict) and "mapping" in conv and isinstance(conv["mapping"], dict):
         for node in conv["mapping"].values():
@@ -151,11 +268,13 @@ def iter_conversation_messages(conv: Dict[str, Any]):
             text = coalesce_text(m)
             ts = m.get("create_time") or conv.get("create_time")
             model = extract_model(m)
+            tool = extract_tool(m)
             yield {
                 "role": role,
                 "text": text or "",
                 "ts": utc_dt(ts),
                 "model": model,
+                "tool": tool,
             }
         return
     # format B (alternative): conv["messages"] is list
@@ -165,11 +284,13 @@ def iter_conversation_messages(conv: Dict[str, Any]):
             text = coalesce_text(m)
             ts = m.get("create_time") or conv.get("create_time")
             model = extract_model(m)
+            tool = extract_tool(m)
             yield {
                 "role": role,
                 "text": text or "",
                 "ts": utc_dt(ts),
                 "model": model,
+                "tool": tool,
             }
         return
     # fallback: treat conv itself as a message list
@@ -181,11 +302,13 @@ def iter_conversation_messages(conv: Dict[str, Any]):
             text = coalesce_text(m)
             ts = m.get("create_time")
             model = extract_model(m)
+            tool = extract_tool(m)
             yield {
                 "role": role,
                 "text": text or "",
                 "ts": utc_dt(ts),
                 "model": model,
+                "tool": tool,
             }
 
 def tokenize_for_keywords(text: str):
@@ -196,6 +319,7 @@ def tokenize_for_keywords(text: str):
 def bigrams(tokens):
     for i in range(len(tokens) - 1):
         yield f"{tokens[i]} {tokens[i+1]}"
+        
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -374,6 +498,7 @@ def main():
     code_block_langs = Counter()
 
     model_usage = Counter()
+    tool_usage = Counter()      # NEW: track tool calls
     hourly = Counter()     # 0..23
     dow = Counter()        # Mon..Sun
     
@@ -387,6 +512,9 @@ def main():
     bi = Counter()
 
     msgs_per_convo = []
+    
+    # NEW: weighted energy tracking (with model and tool multipliers)
+    weighted_wh_total = 0.0
 
     for conv in conversations:
         conv_count += 1
@@ -396,9 +524,20 @@ def main():
             role = (m.get("role") or "").lower()
             text = m.get("text") or ""
             ts = m.get("ts")
+            tool = m.get("tool")  # NEW: extract tool
             model = m.get("model")
 
             msg_count += 1
+            
+            # Calculate per-message weighted energy
+            msg_tokens = len(text) / ASSUME_CHARS_PER_TOKEN if text else 0
+            model_mult = get_model_multiplier(model)
+            tool_mult = get_tool_multiplier(tool) if tool else 1.0
+            # Use max of model and tool multiplier (conservative: don't stack)
+            effective_mult = max(model_mult, tool_mult)
+            msg_wh = msg_tokens * ASSUME_WH_PER_TOKEN * effective_mult
+            weighted_wh_total += msg_wh
+            
             if role == "user":
                 user_msg_count += 1
                 user_chars += len(text)
@@ -430,18 +569,27 @@ def main():
 
             if model:
                 model_usage[model] += 1
+            
+            # Track tool usage
+            if tool:
+                tool_usage[tool] += 1
 
         msgs_per_convo.append(msg_count)
 
     total_msgs = user_msg_count + assistant_msg_count + tool_msg_count
     total_chars = user_chars + assistant_chars
 
-    # token/energy/carbon/water estimates
+    # token/energy/carbon/water estimates (now using weighted energy)
     est_tokens = total_chars / ASSUME_CHARS_PER_TOKEN if total_chars else 0.0
-    est_kwh = (est_tokens * ASSUME_WH_PER_TOKEN) / 1000.0
+    # Use weighted energy instead of flat rate
+    est_kwh = weighted_wh_total / 1000.0
     est_kg_co2e = est_kwh * ASSUME_GRID_KG_CO2E_PER_KWH
     # derive water from kWh, not per token (prevents unit error)
     est_liters_water = est_kwh * ASSUME_WATER_L_PER_KWH
+    
+    # Also calculate baseline (unweighted) for comparison
+    baseline_kwh = (est_tokens * ASSUME_WH_PER_TOKEN) / 1000.0
+    energy_multiplier_effect = est_kwh / baseline_kwh if baseline_kwh > 0 else 1.0
 
     # ad impressions and revenue (assume ad per user prompt)
     est_impressions = user_msg_count * ASSUME_AD_SLOTS_PER_PROMPT
@@ -471,6 +619,7 @@ def main():
         "has_code_prompts": has_code_prompts,
         "code_block_languages_top": code_block_langs.most_common(20),
         "model_usage_top": model_usage.most_common(20),
+        "tool_usage_top": tool_usage.most_common(20),  # NEW
         "hourly_distribution": dict(sorted(hourly.items(), key=lambda kv: kv[0])),
         "dow_distribution": dict(dow),
         "topics": {
@@ -479,7 +628,9 @@ def main():
         },
         "estimates": {
             "chars_per_token": ASSUME_CHARS_PER_TOKEN,
-            "wh_per_token": ASSUME_WH_PER_TOKEN,
+            "wh_per_token_base": ASSUME_WH_PER_TOKEN,
+            "energy_multiplier_effect": round(energy_multiplier_effect, 3),  # NEW
+            "baseline_kwh_unweighted": round(baseline_kwh, 6),  # NEW
             "water_l_per_kwh": ASSUME_WATER_L_PER_KWH,
             "derived_liters_per_token": (ASSUME_WH_PER_TOKEN/1000.0) * ASSUME_WATER_L_PER_KWH,
             "grid_kg_co2e_per_kwh": ASSUME_GRID_KG_CO2E_PER_KWH,
@@ -545,23 +696,12 @@ def main():
         w.writerow(["metric", "value", "unit", "real_world_comparison"])
         
         # energy comparisons
-        # avg smartphone charges 3000mAh at 5V = 15Wh = 0.015 kWh
-        # LED bulb (10W) for 1 hour = 0.01 kWh
+        # EPA: smartphone charge = 0.019 kWh (EPA Greenhouse Gas Equivalencies 2024)
         # laptop (50W avg) for 1 hour = 0.05 kWh
-        # electric car (Tesla Model 3) around 150 Wh/km
-        smartphone_charges = est_kwh / 0.015
-        led_hours = est_kwh / 0.01
+        # EV average consumption: 190 Wh/km (ev-database.org 2024)
+        smartphone_charges = est_kwh / 0.019
         laptop_hours = est_kwh / 0.05
-        ev_km = est_kwh / 0.15
-
-        # real-world tokens explainer
-        # 1 token around 4 characters in english about 0.75 words (roughly)
-        words_est = est_tokens * 0.75
-        chars_est = est_tokens * ASSUME_CHARS_PER_TOKEN
-        tweets_280 = chars_est / 280.0
-        pages_single = words_est / 500.0   # around 500 words per single-spaced page
-        pages_double = words_est / 250.0   # around words per double-spaced page
-        reading_minutes_200wpm = words_est / 200.0  # typical reading speed
+        ev_km = est_kwh / 0.19
 
         w.writerow([
             "tokens",
@@ -573,12 +713,12 @@ def main():
                    f"Could charge {smartphone_charges:.0f} smartphones, or power a laptop for {laptop_hours:.1f} hours, or drive an electric car {ev_km:.1f} km ({ev_km*0.621371:.1f} miles)"])
         
         # carbon comparisons
-        # avg car emits around 0.2 kg CO2e per km
-        # one tree absorbs around 21 kg CO2e per year (57.5g per day)
+        # EPA: avg passenger vehicle emits 3.93x10-4 metric tons CO2e/mile = 0.244 kg/km
+        # EPA: urban tree absorbs 0.060 metric tons CO2/year = 60 kg/year = 0.164 kg/day
         # 1kg CO2e = burning around 0.5L of gasoline
-        car_km = est_kg_co2e / 0.2
+        car_km = est_kg_co2e / 0.244
         car_miles = car_km * 0.621371
-        tree_days = est_kg_co2e / 0.0575
+        tree_days = est_kg_co2e / 0.164
         gasoline_liters = est_kg_co2e / 2.3  # 1L gasoline = around 2.3 kg CO2e
         gasoline_gallons = gasoline_liters * 0.264172
         
@@ -656,11 +796,13 @@ def main():
     print(f"- Messages (user/assistant/tool): {user_msg_count}/{assistant_msg_count}/{tool_msg_count}")
     print(f"- Avg msgs per conversation: {summary['messages_per_conversation_avg']:.2f}")
     print(f"- Top models: {summary['model_usage_top'][:5]}")
+    print(f"- Top tools: {summary['tool_usage_top'][:5]}")
     print(f"- Top topics: {summary['topics']['unigrams_top'][:10]}")
     print(f"- Code prompts: {has_code_prompts} | Languages: {summary['code_block_languages_top'][:5]}")
-    print(f"- Estimated tokens: {est_tokens:,.0f} | kWh: {est_kwh:.3f} | kgCO2e: {est_kg_co2e:.3f} | Water: {est_liters_water:.1f}L")
+    print(f"- Estimated tokens: {est_tokens:,.0f} | kWh: {est_kwh:.4f} (weighted) | Multiplier effect: {energy_multiplier_effect:.2f}x")
+    print(f"- kgCO2e: {est_kg_co2e:.4f} | Water: {est_liters_water:.2f}L")
     print(f"- Ad impressions: {est_impressions:,.0f} | Revenue: ${est_revenue_usd:.2f}")
-    print(f"- Offsets — Carbon: ${est_offset_cost:.2f} | Water: ${est_water_offset_cost:.2f} | Total: ${est_combined_offset_cost:.2f}")
+    print(f"- Offsets — Carbon: ${est_offset_cost:.4f} | Water: ${est_water_offset_cost:.6f} | Total: ${est_combined_offset_cost:.4f}")
     print(f"- Coverage — Combined: {coverage_ratio_including_water:.2f}x | Carbon-only: {coverage_ratio:.2f}x")
     print(f"Reports written to: {out_dir.resolve()}")
 
