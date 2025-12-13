@@ -1,26 +1,169 @@
 
 CITATIONS AND FORMULAS FOR AI IMPACT ANALYSIS
+    This document lists all sources and formulas used to generate the environmental and economic impact figures in impact.csv (output by CreditAnalysis370.py).
 
-This document lists all sources and formulas used to generate the environmental and economic impact figures in impact.csv (output by CreditAnalysis370.py).
 AI Assistance:
-    Portions of code, all code for JSON parsing data extraction (AI is better at reading AI than me), and all code for HTML
-    Research into the carbon market and AI systems energy consumption
-    Verifying my calculations
-    GitHub Copilot, ChatGPT (OpenAI, 2023–2025)
+    - Portions of code, all code for JSON parsing data extraction (AI is better at reading AI than me), and all code for HTML
+    - Research into the carbon market and AI systems energy consumption
+    - Verifying my calculations
+GitHub Copilot, ChatGPT (OpenAI, 2023–2025)
 
+================================================================================
+CHATGPT EXPORT DATA STRUCTURE (conversations.json)
+================================================================================
+
+The following data is extracted from ChatGPT export JSON file and used in calculations:
+(When you download your ChatGPT data, you get a file called 
+"conversations.json". This file contains a record of every conversation you've 
+had with ChatGPT. Below, we explain what information is stored in that file and 
+how we use it. The word "Location" below refers to WHERE in the file's structure 
+the data is stored, like finding a specific folder on your computer, NOT your 
+physical location or GPS coordinates. No geographic location data is collected.)
+
+1. MESSAGE TEXT
+   (What you typed and what ChatGPT replied)
+   - Location: mapping[nodeId].message.content.parts[] OR message.content.text
+     (This is the "file path" inside the JSON where text is stored)
+   - Used for: Token estimation (characters / 4 = tokens)
+   - Aggregated: user_chars, assistant_chars → total_chars
+   
+   We count how many characters (letters, numbers, spaces) are in your 
+   messages and ChatGPT's responses. We divide by 4 to estimate "tokens"—the 
+   units AI uses to measure text length.
+
+2. MESSAGE ROLE  
+   - Location: mapping[nodeId].message.author.role
+   - Values: "user", "assistant", "system", "tool"
+   - Used for: Counting user prompts (for ad impressions), tool usage tracking
+   
+   Each message is labeled by who sent it. "user" = you. "assistant" = 
+   ChatGPT. "tool" = when ChatGPT used a feature like image generation or web 
+   browsing. We count your messages to establish estimate ad revenue potential.
+
+3. MODEL SLUG
+   (Which version of ChatGPT answered you, the term "slug" in this context means a human-
+   readable unique identifier for a piece of content, like the readable terms in URLS)
+   - Location: mapping[nodeId].message.metadata.model_slug OR message.model_slug
+   - Example values: "gpt-4o", "gpt-4o-mini", "o1-preview", "text-davinci-002-render-sha"
+   - Used for: Model-specific energy multipliers (see section 2a)
+   
+   Different AI models use different amounts of electricity. GPT-4 uses 
+   more power than GPT-3.5. We check which model answered each message so we can 
+   calculate energy usage more accurately.
+
+4. TOOL/RECIPIENT
+   (Did ChatGPT use any special features like image generation or web search?)
+   - Location: mapping[nodeId].message.recipient (tool being called)
+   - Location: mapping[nodeId].message.author.name (tool that responded)
+   - Example values: "dalle.text2im", "python", "browser", "file_search", "canmore.canvas_tool"
+   - Used for: Tool-specific energy multipliers (see section 2b)
+   
+   When ChatGPT generates an image (DALL-E) or runs code, it uses extra 
+   computing power. We track when these tools are used because they consume 
+   significantly more energy than regular text responses.
+
+5. TIMESTAMP
+   - Location: mapping[nodeId].message.create_time (Unix timestamp float)
+   - Used for: Hourly distribution, day-of-week analysis
+   
+   Each message has a date and time. We use this to see usage patterns like 
+   whether students use AI more on weekdays or weekends or morning/evening.
+   The location is where the data is stored, not your physical location.
+
+6. CONVERSATION STRUCTURE
+   - Location: conversations[] array, each with mapping{} of message nodes
+   - Used for: Conversation count, messages-per-conversation average
+   
+   Your export is made up of multiple chats. We count how 
+   many conversations you have and how many messages are in each one on average.
+
+================================================================================
 CORE FORMULAS
+================================================================================
 
 1. Token Estimation
 Formula: tokens = total_characters / 4
 Rationale: OpenAI and industry standard heuristic for English text.
-Source: OpenAI API documentation; see also QUICK_REFERENCE.md
+Source: OpenAI API documentation
 
-2. Energy Consumption
-Formula: watt_hours = tokens * 0.008
+2. Energy Consumption (Base Rate)
+Formula: watt_hours_base = tokens * 0.008
          kilowatt_hours = watt_hours / 1000
 Rationale: Weighted average for GPT-3.5, GPT-4, Claude, Llama.
 Source: Luccioni et al. (2024); OpenAI Energy Disclosures (2024); Strubell et al. (2023)
-Electric car fuel efficiency: Electric vehicle database, 2019
+
+2a. MODEL-SPECIFIC ENERGY MULTIPLIERS
+    
+    The base rate of 0.008 Wh/token assumes GPT-3.5-class efficiency.
+    Larger models and reasoning models consume more energy per token.
+    
+    Formula: watt_hours = tokens * 0.008 * model_multiplier
+    
+    Model Multipliers (Conservative Estimates):
+    ┌─────────────────────────────┬────────────┬─────────────────────────────────────┐
+    │ Model                       │ Multiplier │ Rationale                           │
+    ├─────────────────────────────┼────────────┼─────────────────────────────────────┤
+    │ text-davinci-002-render-sha │ 1.0x       │ GPT-3.5 class, baseline             │
+    │ gpt-3.5-turbo               │ 1.0x       │ GPT-3.5 class, baseline             │
+    │ gpt-4o-mini                 │ 1.2x       │ Smaller GPT-4 variant               │
+    │ gpt-4o                      │ 1.8x       │ Optimized GPT-4                     │
+    │ gpt-4, gpt-4-turbo          │ 2.0x       │ Full GPT-4 (~1T params estimated)   │
+    │ o1-mini                     │ 2.0x       │ Reasoning model, smaller            │
+    │ o1-preview, o1              │ 3.0x       │ Reasoning model (conservative)      │
+    │ unknown/default             │ 1.5x       │ Conservative assumption             │
+    └─────────────────────────────┴────────────┴─────────────────────────────────────┘
+    
+    Sources:
+    - MIT Technology Review (May 2025): "We did the math on AI's energy footprint"
+      https://www.technologyreview.com/2025/05/20/1116327/ai-energy-usage-climate-footprint-big-tech/
+      Key findings:
+        • Llama 3.1 8B: ~114 J/response (~0.032 Wh)
+        • Llama 3.1 405B: ~6,706 J/response (~1.86 Wh) — 50x params = 59x energy
+        • "Reasoning models require 43x more energy for simple problems"
+    
+    - Chung, J. & Chowdhury, M. (2025). "The ML.ENERGY Benchmark"
+      arXiv:2505.06371, NeurIPS D&B 2025 (Spotlight)
+      https://ml.energy/leaderboard/
+    
+    - Epoch AI (2025): ChatGPT query estimate ~0.3 Wh (1,080 J) per message
+    
+    Conservative approach: We use lower-bound multipliers. Actual consumption may be 
+    higher, especially for complex prompts or chain-of-thought reasoning.
+
+2b. TOOL-SPECIFIC ENERGY MULTIPLIERS
+    
+    Different tools have vastly different energy profiles beyond text generation.
+    Image generation uses specialized diffusion models on GPU clusters.
+    
+    Formula: watt_hours = tokens * 0.008 * max(model_mult, tool_mult)
+    
+    Tool Multipliers:
+    ┌─────────────────────┬────────────┬─────────────────────────────────────────────┐
+    │ Tool                │ Multiplier │ Rationale                                   │
+    ├─────────────────────┼────────────┼─────────────────────────────────────────────┤
+    │ dalle.text2im       │ 15.0x      │ Image generation (GPU-intensive diffusion)  │
+    │ python              │ 1.2x       │ Code interpreter (CPU, minimal overhead)    │
+    │ browser, web.run    │ 1.1x       │ Network requests (no ML inference)          │
+    │ file_search         │ 1.3x       │ Embedding/vector search                     │
+    │ canmore.canvas_tool │ 1.0x       │ Text manipulation only                      │
+    │ unknown/default     │ 1.0x       │ Assume no additional overhead               │
+    └─────────────────────┴────────────┴─────────────────────────────────────────────┘
+    
+    Sources:
+    - MIT Technology Review (May 2025):
+        • Text generation (Llama 8B): ~114 J/response
+        • Image generation (SD3 Medium): ~2,282 J/image = ~20x text
+        • High-quality image (50 steps): ~4,402 J = ~39x text
+        • Video generation (CogVideoX): ~3,400,000 J/5-sec = ~30,000x text
+    
+    - Luccioni, S. et al. (2024). "Power Hungry Processing" FAccT 2024
+      arXiv:2311.16863
+      "Image generation is orders of magnitude more expensive than text tasks"
+    
+    - Hugging Face AI Energy Score: https://huggingface.co/AIEnergyScore
+    
+    Conservative approach: DALL-E multiplier set at 15x (not 20x) because 
+    OpenAI may have optimizations not present in open-source models.
 
 3. Carbon Footprint
 Formula: kg_CO2e = kilowatt_hours * 0.35
@@ -31,7 +174,6 @@ Important Note:
         Model training footprint
         End‑user device energy and networking
         Hardware embodied carbon
-        Water usage (factored in later)
 
 4. Water Consumption
 Formula: liters = kilowatt_hours * 1.8
@@ -84,24 +226,104 @@ Source: See above
 Instagram Reels: 1 ad per 4 minutes of scrolling (Instagram, 2024)
 YouTube Shorts: 1 ad per 1 minute of scrolling (YouTube, 2024)
 
-References
+REAL-WORLD COMPARISON VALUES
 
-Luccioni, S. et al. (2024). "Power Hungry Processing: Watts Driving the Cost of AI Deployment?" FAccT 2024.
-Electric vehicle database. (2019). EV Database. EV Database. https://ev-database.org/cheatsheet/energy-consumption-electric-car
-Patterson, D. et al. (2024). "The Carbon Footprint of Machine Learning Training Will Plateau, Then Shrink." IEEE Computer.
-Strubell, E. et al. (2023). "Energy and Policy Considerations for Deep Learning in NLP." ACL 2023.
-Li, P. et al. (2024). "Making AI Less 'Thirsty': Uncovering and Addressing the Secret Water Footprint of AI Models." arXiv.
-Google Environmental Report (2024). Alphabet Inc.
-Microsoft Water Positive Commitment (2024). Microsoft Corp.
-EPA eGRID (2024). U.S. Environmental Protection Agency.
-Microsoft Azure Sustainability Report (2024). Microsoft Corp.
-Google Cloud Carbon Footprint (2024). Google Cloud.
-Gold Standard, VCS, voluntary carbon market reports (2024-2025).
-Instagram Ad Frequency: https://www.instagram.com/sambucha/reel/DP_7VYdES7Z/
-YouTube Ad Frequency: https://support.google.com/youtube/answer/2375464?hl=en
-OpenAI API Documentation (2024)
+9. Energy Comparisons
+   Smartphone charge: 0.019 kWh
+   Source: EPA Greenhouse Gas Equivalencies Calculator (2024)
+           https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator
+   
+   Laptop (50W avg) per hour: 0.05 kWh
+   Source: Energy Star typical laptop wattage estimates
+   
+   Electric vehicle: 190 Wh/km (0.19 kWh/km)
+   Source: EV Database (2024) average across models
+           https://ev-database.org/cheatsheet/energy-consumption-electric-car
+
+10. Carbon Comparisons
+    Passenger vehicle emissions: 0.244 kg CO2e/km (3.93×10⁻⁴ metric tons/mile)
+    Source: EPA Greenhouse Gas Equivalencies Calculator (2024)
+            Based on 22.0 miles per gallon average and 8.887 kg CO2/gallon gasoline
+
+    Urban tree carbon absorption: 0.164 kg CO2e/day (60 kg/year)
+    Source: EPA Greenhouse Gas Equivalencies Calculator (2024)
+            0.060 metric tons CO2 sequestered per urban tree per year
+            https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator
+
+    Gasoline combustion: 2.3 kg CO2e per liter
+    Source: EPA (8.887 kg CO2/gallon ÷ 3.785 L/gallon = 2.35 kg/L)
+
+11. Water Comparisons
+    Shower water usage: 9 liters/minute
+    Source: EPA WaterSense (2024)
+
+    Toilet flush: 7.5 liters (modern average)
+    Source: EPA WaterSense standards
+
+    Daily drinking water: 2 liters
+    Source: National Academies of Sciences (2004)
 
 
+================================================================================
+REFERENCES
+================================================================================
+
+Primary Research (Energy Measurement):
+- Chung, J., Ma, J.J., Wu, R., et al. (2025). "The ML.ENERGY Benchmark: Toward 
+  Automated Inference Energy Measurement and Optimization." NeurIPS D&B 2025.
+  arXiv:2505.06371. https://ml.energy/leaderboard/
+  
+- Luccioni, S. et al. (2024). "Power Hungry Processing: Watts Driving the Cost 
+  of AI Deployment?" FAccT 2024. arXiv:2311.16863.
+  Key finding: Image generation consumes ~20x more energy than text generation.
+
+- MIT Technology Review (May 2025). "We did the math on AI's energy footprint."
+  https://www.technologyreview.com/2025/05/20/1116327/ai-energy-usage-climate-footprint-big-tech/
+  Key findings:
+    • Llama 8B: 114 J/response; Llama 405B: 6,706 J/response
+    • SD3 image: 2,282 J; High-quality image: 4,402 J
+    • Video (CogVideoX): 3,400,000 J per 5-second clip
+    • Reasoning models: up to 43x energy for simple problems
+
+- Hugging Face AI Energy Score. https://huggingface.co/AIEnergyScore
+  Luccioni, S., Gamazaychikov, B., Strubell, E., et al.
+
+Environmental Data:
+- EPA eGRID (2024). U.S. Environmental Protection Agency.
+- EPA Greenhouse Gas Equivalencies Calculator (2024).
+  https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator
+    • Smartphone charge: 0.019 kWh
+    • Passenger vehicle: 3.93×10⁻⁴ metric tons CO2e/mile (0.244 kg/km)
+    • Urban tree sequestration: 0.060 metric tons CO2/year (0.164 kg/day)
+
+- Electric vehicle database. (2024). EV Database. 
+  https://ev-database.org/cheatsheet/energy-consumption-electric-car
+  Average EV consumption: 190 Wh/km
+
+- Google Environmental Report (2024). Alphabet Inc.
+- Microsoft Water Positive Commitment (2024). Microsoft Corp.
+- Microsoft Azure Sustainability Report (2024). Microsoft Corp.
+- Google Cloud Carbon Footprint (2024). Google Cloud.
+
+- Li, P. et al. (2024). "Making AI Less 'Thirsty': Uncovering and Addressing 
+  the Secret Water Footprint of AI Models." arXiv.
+
+Other Sources:
+- Patterson, D. et al. (2024). "The Carbon Footprint of Machine Learning 
+  Training Will Plateau, Then Shrink." IEEE Computer.
+- Strubell, E. et al. (2023). "Energy and Policy Considerations for Deep 
+  Learning in NLP." ACL 2023.
+- Gold Standard, VCS, voluntary carbon market reports (2024-2025).
+- Instagram Ad Frequency: https://www.instagram.com/sambucha/reel/DP_7VYdES7Z/
+- YouTube Ad Frequency: https://support.google.com/youtube/answer/2375464?hl=en
+- OpenAI API Documentation (2024)
+
+================================================================================
 NOTES
-- All formulas and constants are calibrated to October 2025 research and industry disclosures.
-- Real-world equivalents (energy, water, carbon, ad time) are based on published averages and industry standards as of 2024-2025.
+================================================================================
+- All formulas and constants are calibrated to November 2025 research.
+- Model and tool multipliers use CONSERVATIVE estimates (lower bounds).
+- Real-world equivalents based on EPA and industry standards (2024-2025).
+- Energy calculations now account for model size and tool type.
+- summary.json includes energy_multiplier_effect showing weighted vs baseline ratio.
+
