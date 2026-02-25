@@ -19,6 +19,49 @@ With AI being integrated into the curricula of college courses and industry, stu
 - `analysis/`: CLI output folder (JSON + CSV)
 - `examples/`: sample ChatGPT export
 
+## Survey Snapshot (University Students)
+
+> Purpose: Understand student AI usage, concerns, and where attention (ads) already exists.  
+> Note: Response counts vary by question because some items were skipped.
+
+### Who responded
+- 85% (150) said they are currently university students (14% / 25 not students; 1% / 2 prefer not to say).
+
+### AI usage habits
+| Frequency | % | n |
+|---|---:|---:|
+| Weekly | 36% | 53 |
+| Daily | 25% | 37 |
+| Monthly | 16% | 24 |
+| Never | 20% | 30 |
+| Yearly | 3% | 4 |
+
+### Tools used regularly (multi-select)
+| Tool category | % | n |
+|---|---:|---:|
+| Chat-based assistants (e.g., ChatGPT) | 88% | 99 |
+| Academic/reference tools | 36% | 40 |
+| Productivity tools (summarizers/note-takers) | 17% | 19 |
+| Code assistants (e.g., Copilot) | 14% | 16 |
+| Image generation | 4% | 5 |
+
+### Biggest concern about AI
+| Concern | % | n |
+|---|---:|---:|
+| Environmental damage | 43% | 62 |
+| Job losses | 20% | 28 |
+| Copyright infringement | 17% | 24 |
+| Other | 17% | 25 |
+| No concerns | 3% | 4 |
+
+### Where students already spend attention (multi-select)
+- Instagram: 142 (~99%)
+- YouTube: 128 (~89%)
+- TikTok: 70 (~49%)
+- Pinterest: 86 (~60%)
+
+More detail (including question-by-question tables and marketing implications): **docs/survey-overview.md**
+
 ## Quickstart
 
 ### 1) Set up environment
