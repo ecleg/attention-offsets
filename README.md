@@ -1,9 +1,10 @@
 ## Ad Funded AI Impact Offsets
 
 With AI being integrated into the curricula of college courses and industry, students must cast aside any reservations about its environmental impact to stay competitive. A platform that leverages the attention of students, as opposed to the dwindling savings of college students, would be able to use advertisements to pay off the damages of prompts. We need to start a discussion about the most valuable asset we have in this growing digital economy, transforming this currency mined by tech giants into something bigger.
-
-<img width="1204" height="675" alt="Screenshot 2025-12-13 at 12 59 00 PM" src="https://github.com/user-attachments/assets/40845a92-76f7-4acf-b4aa-41b1ac4f59ef" />
-
+![06733F98-EA02-4D9F-A083-96AD676119E1_1_105_c](https://github.com/user-attachments/assets/9590b248-d77c-453a-8a0a-12c92ec1a715)
+![4A7DC021-31D0-46CA-A3D8-25D39166475E_1_105_c](https://github.com/user-attachments/assets/61b3b09e-5de3-438b-b7ec-60be465b6189)
+![3C98B9E9-5CCE-474E-8086-A13539A1A4AC_1_105_c](https://github.com/user-attachments/assets/654233a4-2924-438f-9430-117ea5508c22)
+![A9D5BA33-F2E3-4972-865A-A561DD065CFB_1_105_c](https://github.com/user-attachments/assets/f807249a-c1b4-46f6-a79e-8a9418289518)
 ## Highlights
 - Estimates tokens, kWh, kgCO2e, and water liters per usage
 - Computes ad-impression revenue and offset coverage ratios
