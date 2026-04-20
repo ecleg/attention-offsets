@@ -1,11 +1,14 @@
 ## Ad Funded AI Impact Offsets
 
 With AI being integrated into the curricula of college courses and industry, students must cast aside any reservations about its environmental impact to stay competitive. A platform that leverages the attention of students, as opposed to the dwindling savings of college students, would be able to use advertisements to pay off the damages of prompts. We need to start a discussion about the most valuable asset we have in this growing digital economy, transforming this currency mined by tech giants into something bigger.
-<img width="5100" height="3300" alt="EqoVis-01" src="https://github.com/user-attachments/assets/010cf74e-65ff-4288-bb1e-4824e799ccdf" />
-<img width="5100" height="3300" alt="EqoVis-03" src="https://github.com/user-attachments/assets/f531904d-2cf3-48d6-8736-5d4085613822" />
-<img width="5100" height="3300" alt="EqoVis-02" src="https://github.com/user-attachments/assets/af485314-7de3-4417-b317-8791d1c713c9" />
-<img width="5100" height="3300" alt="EqoVis-06" src="https://github.com/user-attachments/assets/12b7e07e-6035-4507-9e97-4e99b0463e4f" />
-<img width="5100" height="3300" alt="EqoVis-05" src="https://github.com/user-attachments/assets/9cb67182-c1fb-4989-a128-6c441661e502" />
+
+<img width="2520" height="1631" alt="eqoC" src="https://github.com/user-attachments/assets/efedc1d5-2f72-4d5c-8b91-198198167b99" />
+<img width="2521" height="1631" alt="eqoB" src="https://github.com/user-attachments/assets/dce50af2-030e-460e-9fd5-d38a3de190ee" />
+<img width="2520" height="1631" alt="eqoD" src="https://github.com/user-attachments/assets/3ea2f65d-1af5-40cf-9c7e-a5ee88ea59e7" />
+<img width="2521" height="1631" alt="eqoA" src="https://github.com/user-attachments/assets/916d7729-a6a9-49b3-b549-14f0d0343d87" />
+<img width="2521" height="1631" alt="eqoE" src="https://github.com/user-attachments/assets/7ec02094-4dfb-43a0-bf4c-14006a2bf8dd" />
+
+
 ## Highlights
 - Estimates tokens, kWh, kgCO2e, and water liters per usage
 - Computes ad-impression revenue and offset coverage ratios
