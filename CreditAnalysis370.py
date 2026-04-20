@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-A tool that analyzes export data of Chatgpt to determine the 
+A tool that analyzes the export data of OpenAI and Anthropic models to determine the 
 prompt length, model usage, energy, time of use, possible topics
 (simple top unigrams and bigrams) in order to calculate the ad-
 funded offset potential of a person's AI usage habits
@@ -205,11 +205,39 @@ def load_json(path: Path):
         return json.load(f)
 
 def utc_dt(ts) -> Optional[datetime]:
-    # chatGPT exports often use unix seconds floats
+    """Convert common export timestamp formats to UTC datetime.
+
+    Supports:
+    - Unix seconds (int/float, or numeric strings) — common in ChatGPT exports
+    - ISO 8601 strings (e.g. "2026-03-24T18:27:06.694432Z") — common in Anthropic exports
+    """
     try:
         if ts is None:
             return None
-        return datetime.fromtimestamp(float(ts), tz=timezone.utc)
+
+        if isinstance(ts, (int, float)):
+            return datetime.fromtimestamp(float(ts), tz=timezone.utc)
+
+        if isinstance(ts, str):
+            s = ts.strip()
+            if not s:
+                return None
+
+            # Numeric timestamp in string form
+            try:
+                return datetime.fromtimestamp(float(s), tz=timezone.utc)
+            except Exception:
+                pass
+
+            # ISO 8601 timestamp
+            if s.endswith("Z"):
+                s = s[:-1] + "+00:00"
+            dt = datetime.fromisoformat(s)
+            if dt.tzinfo is None:
+                return dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone(timezone.utc)
+
+        return None
     except Exception:
         return None
 
@@ -229,6 +257,18 @@ def coalesce_text(msg) -> str:
                 parts.extend(str(p) for p in content["parts"] if p is not None)
             elif "text" in content and isinstance(content["text"], str):
                 parts.append(content["text"])
+        elif isinstance(content, list):
+            # Anthropic export: content is a list of blocks
+            # Only include explicit text blocks to avoid counting tool payloads
+            # (tool_use/tool_result) as if they were assistant/user messages.
+            for block in content:
+                if not isinstance(block, dict):
+                    continue
+                if block.get("type") != "text":
+                    continue
+                t = block.get("text")
+                if isinstance(t, str):
+                    parts.append(t)
         elif isinstance(content, str):
             parts.append(content)
     # alternate schema: "text"
@@ -241,8 +281,25 @@ def coalesce_text(msg) -> str:
 def extract_role(msg) -> Optional[str]:
     # try various layouts
     # mapping -> message -> author.role
+    if not isinstance(msg, dict):
+        return None
+
     role = None
     author = None
+
+    # Anthropic export: role is encoded as a simple sender string
+    sender = msg.get("sender")
+    if isinstance(sender, str):
+        sender_lower = sender.lower()
+        if sender_lower == "human":
+            return "user"
+        if sender_lower == "assistant":
+            return "assistant"
+        if sender_lower == "system":
+            return "system"
+        if sender_lower == "tool":
+            return "tool"
+
     if "author" in msg and isinstance(msg["author"], dict):
         author = msg["author"]
         role = author.get("role")
@@ -275,20 +332,60 @@ def extract_model(msg) -> Optional[str]:
 
 def extract_tool(msg) -> Optional[str]:
     """Extract tool name from message (recipient field or author.name for tool role)."""
+    if not isinstance(msg, dict):
+        return None
+
     # Check recipient field (indicates tool being called)
     recipient = msg.get("recipient")
     if recipient and isinstance(recipient, str):
-        return recipient
+        r = recipient.strip()
+        # ChatGPT exports frequently use recipient="all" for normal assistant messages
+        if r and r.lower() not in {"all", "assistant"}:
+            return r
     # Check author.name for tool messages
     author = msg.get("author", {})
     if isinstance(author, dict):
         name = author.get("name")
         if name and isinstance(name, str):
-            return name
+            n = name.strip()
+            if n and n.lower() not in {"all", "assistant"}:
+                return n
     return None
 
+def extract_tools(msg) -> list[str]:
+    """Extract tool names from a message across supported export schemas."""
+    if not isinstance(msg, dict):
+        return []
+
+    tools: list[str] = []
+
+    # ChatGPT export: `recipient` for tool invocations
+    t = extract_tool(msg)
+    if t:
+        tools.append(t)
+
+    # Anthropic export: tool blocks inside `content`
+    content = msg.get("content")
+    if isinstance(content, list):
+        for block in content:
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") in {"tool_use", "tool_result"}:
+                name = block.get("name")
+                if isinstance(name, str) and name.strip():
+                    tools.append(name.strip())
+
+    # De-duplicate while preserving order
+    seen: set[str] = set()
+    out: list[str] = []
+    for tool_name in tools:
+        if tool_name not in seen:
+            seen.add(tool_name)
+            out.append(tool_name)
+    return out
+
 def iter_conversation_messages(conv: Dict[str, Any]):
-    # normalized iterator yielding dicts: {role, text, ts, model, tool}
+    # normalized iterator yielding dicts: {role, text, ts, model, tools, tool}
     # format A (common): conv["mapping"] with nodes keyed by message id
     if isinstance(conv, dict) and "mapping" in conv and isinstance(conv["mapping"], dict):
         for node in conv["mapping"].values():
@@ -299,13 +396,14 @@ def iter_conversation_messages(conv: Dict[str, Any]):
             text = coalesce_text(m)
             ts = m.get("create_time") or conv.get("create_time")
             model = extract_model(m)
-            tool = extract_tool(m)
+            tools = extract_tools(m)
             yield {
                 "role": role,
                 "text": text or "",
                 "ts": utc_dt(ts),
                 "model": model,
-                "tool": tool,
+                "tools": tools,
+                "tool": tools[0] if tools else None,
             }
         return
     # format B (alternative): conv["messages"] is list
@@ -315,13 +413,33 @@ def iter_conversation_messages(conv: Dict[str, Any]):
             text = coalesce_text(m)
             ts = m.get("create_time") or conv.get("create_time")
             model = extract_model(m)
-            tool = extract_tool(m)
+            tools = extract_tools(m)
             yield {
                 "role": role,
                 "text": text or "",
                 "ts": utc_dt(ts),
                 "model": model,
-                "tool": tool,
+                "tools": tools,
+                "tool": tools[0] if tools else None,
+            }
+        return
+    # format C (Anthropic): conv["chat_messages"] is list
+    if isinstance(conv, dict) and "chat_messages" in conv and isinstance(conv["chat_messages"], list):
+        for m in conv["chat_messages"]:
+            if not isinstance(m, dict):
+                continue
+            role = extract_role(m)
+            text = coalesce_text(m)
+            ts = m.get("created_at") or conv.get("created_at")
+            model = extract_model(m)
+            tools = extract_tools(m)
+            yield {
+                "role": role,
+                "text": text or "",
+                "ts": utc_dt(ts),
+                "model": model,
+                "tools": tools,
+                "tool": tools[0] if tools else None,
             }
         return
     # fallback: treat conv itself as a message list
@@ -333,13 +451,14 @@ def iter_conversation_messages(conv: Dict[str, Any]):
             text = coalesce_text(m)
             ts = m.get("create_time")
             model = extract_model(m)
-            tool = extract_tool(m)
+            tools = extract_tools(m)
             yield {
                 "role": role,
                 "text": text or "",
                 "ts": utc_dt(ts),
                 "model": model,
-                "tool": tool,
+                "tools": tools,
+                "tool": tools[0] if tools else None,
             }
 
 def tokenize_for_keywords(text: str):
@@ -398,7 +517,8 @@ def analyze_file(input_path: Path) -> Dict[str, Any]:
     assistant_msg_count = 0
     tool_msg_count = 0
     weighted_wh_total = 0.0
-    total_chars = 0
+    user_chars = 0
+    assistant_chars = 0
     model_usage = Counter()
     tool_usage = Counter()
     hourly = Counter()
@@ -428,7 +548,7 @@ def analyze_file(input_path: Path) -> Dict[str, Any]:
             role = (m.get("role") or "").lower()
             text = m.get("text") or ""
             model = m.get("model")
-            tool = m.get("tool")
+            tools = m.get("tools") or ([] if not m.get("tool") else [m.get("tool")])
 
             # Count by role
             if role == "user":
@@ -440,17 +560,22 @@ def analyze_file(input_path: Path) -> Dict[str, Any]:
 
             # Weighted energy per message
             msg_tokens = len(text) / ASSUME_CHARS_PER_TOKEN if text else 0
-            total_chars += len(text) if text else 0
+            if text:
+                if role == "user":
+                    user_chars += len(text)
+                elif role in ("assistant", "system"):
+                    assistant_chars += len(text)
             model_mult = get_model_multiplier(model)
-            tool_mult = get_tool_multiplier(tool) if tool else 1.0
+            tool_mult = max((get_tool_multiplier(t) for t in tools if t), default=1.0)
             effective_mult = max(model_mult, tool_mult)
             weighted_wh_total += msg_tokens * ASSUME_WH_PER_TOKEN * effective_mult
 
             # Model and tool tracking
             if model:
                 model_usage[model] += 1
-            if tool:
-                tool_usage[tool] += 1
+            for t in tools:
+                if t:
+                    tool_usage[t] += 1
 
             # Text analysis
             if text:
@@ -463,7 +588,8 @@ def analyze_file(input_path: Path) -> Dict[str, Any]:
                 hourly[ts.hour] += 1
                 dow[ts.weekday()] += 1
 
-    est_tokens = int(total_chars / ASSUME_CHARS_PER_TOKEN) if total_chars else 0
+    total_chars = user_chars + assistant_chars
+    est_tokens = (total_chars / ASSUME_CHARS_PER_TOKEN) if total_chars else 0.0
     est_kwh = weighted_wh_total / 1000.0
     est_kg_co2e = est_kwh * ASSUME_GRID_KG_CO2E_PER_KWH
     est_liters_water = est_kwh * ASSUME_WATER_L_PER_KWH
@@ -572,15 +698,15 @@ def main():
             role = (m.get("role") or "").lower()
             text = m.get("text") or ""
             ts = m.get("ts")
-            tool = m.get("tool")  # NEW: extract tool
             model = m.get("model")
+            tools = m.get("tools") or ([] if not m.get("tool") else [m.get("tool")])
 
             msg_count += 1
             
             # Calculate per-message weighted energy
             msg_tokens = len(text) / ASSUME_CHARS_PER_TOKEN if text else 0
             model_mult = get_model_multiplier(model)
-            tool_mult = get_tool_multiplier(tool) if tool else 1.0
+            tool_mult = max((get_tool_multiplier(t) for t in tools if t), default=1.0)
             # Use max of model and tool multiplier (conservative: don't stack)
             effective_mult = max(model_mult, tool_mult)
             msg_wh = msg_tokens * ASSUME_WH_PER_TOKEN * effective_mult
@@ -619,8 +745,9 @@ def main():
                 model_usage[model] += 1
             
             # Track tool usage
-            if tool:
-                tool_usage[tool] += 1
+            for t in tools:
+                if t:
+                    tool_usage[t] += 1
 
         msgs_per_convo.append(msg_count)
 
