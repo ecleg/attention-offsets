@@ -1,12 +1,12 @@
 ## Ad Funded AI Impact Offsets
 
 With AI being integrated into the curricula of college courses and industry, students must cast aside any reservations about its environmental impact to stay competitive. A platform that leverages the attention of students, as opposed to the dwindling savings of college students, would be able to use advertisements to pay off the damages of prompts. We need to start a discussion about the most valuable asset we have in this growing digital economy, transforming this currency mined by tech giants into something bigger.
-<img width="5100" height="3300" alt="EqoVis-01" src="https://github.com/user-attachments/assets/6da16728-2494-44c6-9e95-ceef1d9daa08" />
-<img width="5100" height="3300" alt="EqoVis-03" src="https://github.com/user-attachments/assets/c54b6f29-19e5-47d5-854f-d3345ad945cf" />
-<img width="5100" height="3300" alt="EqoVis-02" src="https://github.com/user-attachments/assets/e9013d1d-7194-4cc5-b1b7-8e393dfd8a97" />
-<img width="5100" height="3300" alt="EqoVis-04" src="https://github.com/user-attachments/assets/2d31e771-9e52-4c44-8f9a-5c382d54a162" />
-<img width="5100" height="3300" alt="EqoVis-06" src="https://github.com/user-attachments/assets/44861451-9a40-4e1e-87a8-641081fc47ac" />
-<img width="5100" height="3300" alt="EqoVis-05" src="https://github.com/user-attachments/assets/583607b3-c597-414b-b671-fcf6de0b89d6" />
+<img width="3300" height="5100" alt="EqoVis-01" src="https://github.com/user-attachments/assets/6da16728-2494-44c6-9e95-ceef1d9daa08" />
+<img width="3300" height="5100" alt="EqoVis-03" src="https://github.com/user-attachments/assets/c54b6f29-19e5-47d5-854f-d3345ad945cf" />
+<img width="3300" height="5100" alt="EqoVis-02" src="https://github.com/user-attachments/assets/e9013d1d-7194-4cc5-b1b7-8e393dfd8a97" />
+<img width="3300" height="5100" alt="EqoVis-04" src="https://github.com/user-attachments/assets/2d31e771-9e52-4c44-8f9a-5c382d54a162" />
+<img width="3300" height="5100" alt="EqoVis-06" src="https://github.com/user-attachments/assets/44861451-9a40-4e1e-87a8-641081fc47ac" />
+<img width="3300" height="5100" alt="EqoVis-05" src="https://github.com/user-attachments/assets/583607b3-c597-414b-b671-fcf6de0b89d6" />
 
 ## Highlights
 - Estimates tokens, kWh, kgCO2e, and water liters per usage
